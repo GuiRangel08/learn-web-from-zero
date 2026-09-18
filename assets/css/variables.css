@@ -1,0 +1,37 @@
+:root { color-scheme: dark; --bg: #101318; --surface: #171b22; --surface-raised: #1d232c; --editor: #11161d; --border: #303741; --text: #edf0f5; --muted: #a3adbc; --accent: #a2e4bd; --accent-bg: #243d31; --accent-ink: #10271a; --red: #ffaaa3; --yellow: #f0d18c; --radius: 12px; font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 15px; line-height: 1.6; }
+:root[data-theme="light"] { color-scheme: light; --bg: #f6f7f9; --surface: #fff; --surface-raised: #eef1f5; --editor: #f5f7fa; --border: #cbd3dd; --text: #202a37; --muted: #526174; --accent: #226b43; --accent-bg: #e5f4e9; --accent-ink: #fff; --red: #a52d24; --yellow: #856008; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+button, input, select, textarea { font: inherit; }
+button, a, input, select, textarea, summary, [tabindex] { -webkit-tap-highlight-color: transparent; }
+button, summary { cursor: pointer; }
+button { color: inherit; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+a { color: inherit; text-decoration: none; }
+button, a, input, summary, [tabindex] { touch-action: manipulation; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+::selection { background: #426950; color: white; }
+h1, h2, h3, p { margin: 0; }
+h1, h2, h3 { line-height: 1.25; letter-spacing: -.025em; }
+h1 { font-size: clamp(1.7rem, 3vw, 2.6rem); font-weight: 650; }
+h2 { font-size: 1.4rem; font-weight: 600; }
+h3 { font-size: 1.06rem; font-weight: 600; }
+p { margin-block: .6rem; }
+small, .small { font-size: .8rem; }
+ul, ol { padding-left: 1.3rem; }
+li { margin-block: .4rem; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--editor); border: 1px solid var(--border); padding: 16px; border-radius: 8px; font-size: .85rem; line-height: 1.75; }
+code, textarea, .line-numbers { font-family: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, monospace; }
+iframe { border: 0; background: #fff; }
+progress { display: block; width: 100%; height: 5px; margin: 12px 0; border: 0; border-radius: 10px; overflow: hidden; background: var(--border); accent-color: var(--accent); }
+progress::-webkit-progress-bar { background: var(--border); }
+progress::-webkit-progress-value { background: var(--accent); border-radius: 10px; }
+progress::-moz-progress-bar { background: var(--accent); }
+.muted { color: var(--muted); }
+.accent { color: var(--accent); }
+.eyebrow { color: var(--accent); font-size: .7rem; letter-spacing: .12em; font-weight: 650; }
+.lead { font-size: 1.08rem; color: var(--muted); line-height: 1.8; margin-top: 18px; }
+.between { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tiny-dot { display: inline-block; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; margin-right: 7px; }
+.skip-link { position: fixed; left: 16px; top: -100px; padding: 12px; background: var(--accent); color: var(--accent-ink); z-index: 100; }
+.skip-link:focus { top: 12px; }

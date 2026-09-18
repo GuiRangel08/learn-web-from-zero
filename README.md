@@ -1,8 +1,36 @@
 # Primeiro Código
 
-Plataforma interativa, em português, para quem nunca programou. Construída com **HTML5, CSS3 e JavaScript puro**, sem bibliotecas, frameworks, gerenciador de pacotes ou compilação.
+**Aprenda a criar para a web, começando do zero.**
 
-### Compromisso com as linguagens atuais
+Primeiro Código (`learn-web-from-zero`) é uma plataforma interativa, em português, para quem nunca programou. Reúne explicações passo a passo, um editor de código, prévia do resultado e avaliação automática dos desafios no próprio navegador.
+
+Construída com **HTML, CSS e JavaScript puro**, sem bibliotecas, frameworks, gerenciador de pacotes ou compilação. A aplicação é estática e pode ser aberta diretamente pelo arquivo `index.html`.
+
+## Visão geral
+
+- **Aprenda praticando:** introdução guiada e cinco aulas de HTML com exercícios, dicas e soluções comentadas.
+- **Veja o resultado:** editor integrado com prévia e feedback por critério do desafio.
+- **Continue de onde parou:** progresso e código salvos no navegador, com exportação e importação em JSON.
+- **Estude no seu ritmo:** desbloqueio sequencial, temas claro e escuro e interface responsiva.
+- **Comece sem instalação:** basta um navegador moderno com JavaScript habilitado e os arquivos do projeto.
+
+**Estado atual:** cinco aulas de HTML estão publicadas. O catálogo prevê 63 aulas entre HTML, CSS e JavaScript; as demais aparecem como **Em preparação**.
+
+## Sumário
+
+- [Abrir e aprender](#abrir-e-aprender)
+- [Percurso disponível](#percurso-disponível)
+- [Funcionalidades](#funcionalidades)
+- [Estrutura dos arquivos](#estrutura-dos-arquivos)
+- [Avaliação e regras de negócio](#avaliação-e-regras-de-negócio)
+- [Persistência e migração](#persistência-e-migração)
+- [Como adicionar uma aula](#como-adicionar-uma-aula)
+- [Como adicionar um tipo de requisito](#como-adicionar-um-tipo-de-requisito)
+- [Testes](#testes)
+- [Segurança e limitações do ambiente de execução](#segurança-e-limitações-do-ambiente-de-execução)
+- [Próximos passos](#próximos-passos)
+
+## Compromisso com as linguagens atuais
 
 O conteúdo ensina somente **HTML, CSS e JavaScript nativos**, conforme os padrões atuais:
 
@@ -12,14 +40,15 @@ O conteúdo ensina somente **HTML, CSS e JavaScript nativos**, conforme os padr�
 
 Referências editoriais: [HTML Living Standard](https://html.spec.whatwg.org/), [especificações CSS](https://www.w3.org/Style/CSS/current-work) e [ECMAScript](https://tc39.es/ecma262/).
 
-Uma eventual adoção de framework na implementação da plataforma não muda o currículo. React, TypeScript e outras ferramentas de construção da plataforma não fazem parte dos exemplos ou desafios do aluno. A implementação atual continua sem dependências porque esta correção do avaliador não exige um framework.
+Os exemplos e desafios do aluno usam as linguagens nativas da web. A implementação da plataforma também utiliza essas tecnologias, sem dependências externas.
 
 ## Abrir e aprender
 
-1. Abra **`index.html`** no navegador.
-2. Clique em **Começar a aprender**.
-3. Percorra a introdução, que explica um conceito por tela.
-4. Escreva seu HTML no editor e acompanhe Resultado e Avaliação.
+1. Baixe ou clone o repositório. Se baixar um arquivo ZIP, extraia seu conteúdo.
+2. Abra **`index.html`** no navegador.
+3. Clique em **Começar a aprender**.
+4. Percorra a introdução, que explica um conceito por tela.
+5. Escreva seu HTML no editor e acompanhe Resultado e Avaliação.
 
 Não é necessário instalar nada. Mantenha as pastas do projeto junto dos arquivos HTML. Não há requisições para fontes, bibliotecas ou serviços de terceiros para iniciar a aplicação. A imagem dos exercícios também funciona offline.
 
@@ -59,7 +88,7 @@ Site; navegador; arquivo, pasta e extensão; criação de pasta; editor de texto
 
 Cada aula tem explicações, analogia, sintaxe, exemplo renderizado, exercício guiado, desafio, pelo menos cinco critérios, três dicas, solução comentada, erros comuns, boas práticas e resumo. A ordem começa pelo exemplo mínimo, antes do documento completo.
 
-O catálogo contém **63 entradas**: 18 de HTML, 21 de CSS e 24 de JavaScript. Apenas as cinco acima estão publicadas. As outras são identificadas explicitamente como **Em preparação**. Os conceitos introdutórios de texto e atributos aparecem nas aulas disponíveis e também têm revisões previstas no catálogo. O primeiro percurso concentra as cinco aulas práticas solicitadas; os demais tópicos recebem aulas próprias na expansão.
+O catálogo contém **63 entradas**: 18 de HTML, 21 de CSS e 24 de JavaScript. Apenas as cinco acima estão publicadas. As outras são identificadas explicitamente como **Em preparação**. Os conceitos introdutórios de texto e atributos aparecem nas aulas disponíveis e também têm revisões previstas no catálogo. O primeiro percurso concentra cinco aulas práticas; os demais tópicos recebem aulas próprias na expansão.
 
 CSS só pode ser habilitado em aulas posteriores quando **todo o módulo HTML** estiver publicado e concluído, incluindo semântica. JavaScript exige também **todo o módulo CSS**. Concluir apenas as cinco aulas do MVP não libera essas abas prematuramente.
 
@@ -252,7 +281,7 @@ python3 tools/check.py
 
 Usa apenas a biblioteca padrão do Python e o protocolo de depuração do navegador. Cria um perfil temporário, inicia um servidor temporário, executa os testes via `file://` e HTTP e percorre o fluxo de introdução, cinco aulas, autosave, recarga, restauração e abas móveis em 390 px. O perfil é removido ao terminar. Este utilitário inicia Chrome com `--no-sandbox` para suportar ambientes de CI isolados; essa opção é exclusiva do processo de teste e não faz parte do uso da plataforma.
 
-Validação realizada nesta entrega: **37/37 via arquivo local, 37/37 via HTTP, fluxo ponta a ponta aprovado** no Chrome headless. Inclui a regressão de parágrafo aberto, que agora impede concluir uma aula nova e apresenta orientação de fechamento, seguida da conclusão normal das cinco aulas. A suíte usa recursos reais do navegador, substituindo Vitest/Testing Library conforme a exigência posterior de nenhuma dependência externa.
+A suíte inclui a regressão de parágrafo aberto, que impede concluir uma aula nova e apresenta orientação de fechamento, seguida da conclusão normal das cinco aulas. Execute a verificação para obter o resultado no seu ambiente; ela utiliza recursos reais do navegador, sem bibliotecas de testes externas.
 
 ## Segurança e limitações do ambiente de execução
 
@@ -270,7 +299,7 @@ Validação realizada nesta entrega: **37/37 via arquivo local, 37/37 via HTTP, 
 - O isolamento protege os dados da aplicação, mas não é uma ferramenta antifraude: o aluno pode editar seu armazenamento local ou interferir na avaliação dentro de seu próprio iframe. Certificados confiáveis exigiriam uma arquitetura diferente.
 - O iframe opaco não pode ler imagens arbitrárias do disco em `file://`. A imagem fornecida tem uma cópia `data:` em `resources.js`; o arquivo SVG original permanece para o aluno usar fora da plataforma. Para outros recursos locais, prefira HTTP ou registre um recurso didático incorporado.
 
-## Segunda versão recomendada
+## Próximos passos
 
 1. Publicar os tópicos restantes de HTML na progressão planejada, com revisão e projeto final antes de CSS.
 2. Completar CSS puro, incluindo observação de estilos calculados e desafios em diferentes larguras.

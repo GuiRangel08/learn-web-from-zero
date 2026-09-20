@@ -15,6 +15,8 @@
     const doc = new DOMParser().parseFromString(code.html, 'text/html');
     // A base e políticas pertencem ao runner, nunca ao documento do aluno.
     doc.querySelectorAll('base, meta[http-equiv]').forEach(el => el.remove());
+    // As abas representam os arquivos locais dos exercícios de conexão.
+    doc.querySelectorAll('link[rel="stylesheet"][href="style.css"]').forEach(el => el.remove());
     const nonce = token();
     const policy = doc.createElement('meta'); policy.httpEquiv = 'Content-Security-Policy';
     policy.content = `default-src 'none'; script-src 'nonce-${nonce}'; style-src 'unsafe-inline'; img-src data: blob: file: http: https:; connect-src 'none'; font-src 'none'; media-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; form-action 'none'; base-uri 'none'`;
@@ -34,7 +36,23 @@
       const id = ${JSON.stringify(id)};
       const send = data => parent.postMessage({ channel: 'first-code', token: id, ...data }, '*');
       let errors = 0;
-      const report = (message, line = 0) => { if (errors++ < 6) send({ type: 'error', message: String(message).slice(0, 500), line: Math.max(0, Math.min(1000000, Number(line) || 0)) }); };
+      globalThis.__firstCodeLogs = [];
+      globalThis.__firstCodeError = false;
+      const originalLog = console.log.bind(console);
+      let consoleOutput;
+      console.log = (...values) => {
+        originalLog(...values);
+        if (globalThis.__firstCodeLogs.length >= 100) return;
+        globalThis.__firstCodeLogs.push(values);
+        if (!consoleOutput && document.body) {
+          const section = document.createElement('section');
+          const heading = document.createElement('h2'); heading.textContent = 'Saída de console.log';
+          consoleOutput = document.createElement('pre');
+          section.append(heading, consoleOutput); document.body.append(section);
+        }
+        if (consoleOutput) consoleOutput.textContent += values.map(value => typeof value === 'string' ? value : JSON.stringify(value)).join(' ').slice(0, 2000) + '\\n';
+      };
+      const report = (message, line = 0) => { globalThis.__firstCodeError = true; if (errors++ < 6) send({ type: 'error', message: String(message).slice(0, 500), line: Math.max(0, Math.min(1000000, Number(line) || 0)) }); };
       addEventListener('error', e => { report(e.message || 'Um recurso não pôde ser carregado.', e.lineno); e.preventDefault(); });
       addEventListener('unhandledrejection', e => { report(e.reason?.message || 'Uma ação não pôde ser concluída.'); e.preventDefault(); });
       document.addEventListener('click', e => { if (e.target.closest('a')) e.preventDefault(); }, true);
@@ -46,19 +64,32 @@
       const script = doc.createElement('script'); script.setAttribute('nonce', nonce);
       script.textContent = code.javascript.replace(/<\/script/gi, '<\\/script'); doc.body.append(script);
     }
-    if (options.allowScripts && options.tests?.length) {
+    if (options.tests?.length) {
       const script = doc.createElement('script'); script.setAttribute('nonce', nonce);
       // Descritores vêm do conteúdo confiável, nunca de código importado pelo aluno.
       script.textContent = `addEventListener('DOMContentLoaded', () => {
         const tests = ${JSON.stringify(options.tests).replace(/</g, '\\u003c')}; const results = {};
         for (const test of tests) { try {
-          const target = document.querySelector(test.selector);
-          if (test.action === 'click') target.click();
-          if (test.action === 'input') { target.value = test.input; target.dispatchEvent(new Event('input', { bubbles: true })); }
-          if (test.action === 'submit') target.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-          const output = document.querySelector(test.output || test.selector);
-          results[test.id] = Boolean(output && (test.className ? output.classList.contains(test.className) : output.textContent.trim() === test.expected));
+          if (test.kind === 'console') {
+            results[test.id] = JSON.stringify(globalThis.__firstCodeLogs) === JSON.stringify(test.expectedLogs);
+            continue;
+          }
+          for (const step of test.steps || [test]) {
+            if (!step.action) continue;
+            const target = document.querySelector(step.selector);
+            if (step.action === 'click') target.click();
+            if (step.action === 'input') { target.value = step.input; target.dispatchEvent(new Event('input', { bubbles: true })); }
+            if (step.action === 'submit') target.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+          }
+          const outputs = [...document.querySelectorAll(test.output || test.selector)];
+          if (test.count !== undefined) {
+            results[test.id] = outputs.length === test.count && (test.expected === undefined || outputs.every(el => el.textContent.trim() === test.expected));
+          } else {
+            const output = outputs[0];
+            results[test.id] = Boolean(output && (test.type === 'css-computed' ? getComputedStyle(output).getPropertyValue(test.property).trim() === test.expected : test.className ? output.classList.contains(test.className) : String(test.property ? output[test.property] : output.textContent).trim() === test.expected));
+          }
         } catch { results[test.id] = false; } }
+        if (globalThis.__firstCodeError) Object.keys(results).forEach(key => { results[key] = false; });
         parent.postMessage({channel:'first-code', token:${JSON.stringify(id)}, type:'results', results}, '*');
       });`;
       doc.body.append(script);
@@ -86,6 +117,7 @@
       this.frame.srcdoc = documentSource(code, this.id, options);
       this.timer = setTimeout(() => this.onError('A prévia demorou para responder. Use Executar para tentar novamente.'), 4000);
     }
+    invalidate() { clearTimeout(this.timer); this.id = ''; }
     stop() { clearTimeout(this.timer); this.id = ''; this.frame.srcdoc = '<p>Prévia interrompida. Pressione Executar para recomeçar.</p>'; }
     destroy() { clearTimeout(this.timer); removeEventListener('message', this.listener); }
   }

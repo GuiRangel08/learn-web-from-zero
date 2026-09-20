@@ -8,8 +8,8 @@
   const first = F.htmlLessons[0];
   const check = (requirement, source) => F.evaluator.evaluate({ challenge: { requirements: [{ id: 'test', description: 'Teste', feedback: { success: 'ok', failure: 'ajuste' }, ...requirement }] } }, typeof source === 'string' ? code(source) : source);
   const result = (html) => F.evaluator.evaluate(first, code(html));
-  test('Cinco aulas com conteúdo, três dicas e pelo menos quatro requisitos', () => {
-    equal(F.htmlLessons.length, 5);
+  test('18 aulas HTML com conteúdo, três dicas e pelo menos quatro requisitos', () => {
+    equal(F.htmlLessons.length, 18);
     F.htmlLessons.forEach(l => { assert(l.theory.length >= 6, `Conteúdo ausente: ${l.title}`); equal(l.challenge.hints.length, 3); assert(l.challenge.requirements.length >= 4); equal(F.evaluator.evaluate(l, l.challenge.solution).status, 'complete'); });
   });
   test('Código vazio ou totalmente errado: vermelho e 0%', () => { equal(result('').percentage, 0); equal(result('<button>Oi</button>').status, 'far'); });
@@ -63,7 +63,7 @@
     equal(F.evaluator.diagnostics('<svg><path d="M0 0" /></svg><p>Texto</p>').length, 0);
   });
   test('Todas as cinco aulas rejeitam uma solução com fechamento ausente', () => {
-    for (const lesson of F.htmlLessons) {
+    for (const lesson of F.htmlLessons.slice(0, 5)) {
       const broken = { ...lesson.challenge.solution, html: lesson.challenge.solution.html.replace('</h1>', '') };
       assert(F.evaluator.evaluate(lesson, broken).status !== 'complete', lesson.title);
     }
@@ -84,7 +84,7 @@
   });
   test('Armazenamento corrompido e falta de espaço são tratados', () => { assert(F.storage.load({ getItem: () => '{bad' }).error); equal(F.storage.save(F.storage.defaults(), { setItem: () => { throw new Error('quota'); } }), false); });
   test('Importação valida versão, código e não confia em percentual externo', () => { let rejected = false; try { F.storage.parse('{"version":99,"lessons":{}}'); } catch { rejected = true; } assert(rejected); const state = F.storage.defaults(); state.percentage = 999; equal(F.storage.normalize(state).percentage, 0); });
-  test('Desbloqueio é sequencial e aulas futuras continuam bloqueadas', () => { const s = F.storage.defaults(); assert(F.progress.isUnlocked(s, first)); assert(!F.progress.isUnlocked(s, F.htmlLessons[1])); F.progress.entry(s, first).completed = true; assert(F.progress.isUnlocked(s, F.htmlLessons[1])); assert(!F.progress.isUnlocked(s, F.lessons.find(l => !l.available))); equal(F.progress.languages(s, first).join(','), 'html'); });
+  test('Desbloqueio é sequencial e CSS exige todo HTML', () => { const s = F.storage.defaults(); assert(F.progress.isUnlocked(s, first)); assert(!F.progress.isUnlocked(s, F.htmlLessons[1])); F.progress.entry(s, first).completed = true; assert(F.progress.isUnlocked(s, F.htmlLessons[1])); assert(!F.progress.isUnlocked(s, F.cssLessons[0])); equal(F.progress.languages(s, first).join(','), 'html'); });
   test('Restaurar código preserva dicas, tentativas e conquistas', () => { const s = F.storage.defaults(), entry = F.progress.entry(s, first); entry.code.html = 'alteração'; entry.hints = 2; entry.attempts = 4; entry.completed = true; F.progress.restore(s, first); equal(entry.code.html, first.starterCode.html); equal(entry.hints, 2); equal(entry.attempts, 4); assert(entry.completed); });
   test('Editor: alteração, Tab, saída por Esc e execução por atalho', () => {
     const host = document.createElement('div'); fixture.append(host); let changed, runs = 0;
@@ -124,6 +124,72 @@
     addEventListener('message', receive);
     frame.srcdoc = F.preview.documentSource({ html: '<img src="imagens/jardim.svg" alt="Planta">', css: '', javascript: `addEventListener('load', () => parent.postMessage({channel:'first-code',token:'image-test',type:'results',results:{loaded:document.querySelector('img').naturalWidth > 0}}, '*'));` }, 'image-test', { allowScripts: true });
   }));
+  function runtimeFor(lesson, sourceCode) {
+    const descriptors = lesson.challenge.requirements.filter(r => ['js-behavior', 'css-computed'].includes(r.type));
+    if (!descriptors.length) return Promise.resolve({});
+    return new Promise((resolve, reject) => {
+      const frame = document.createElement('iframe'); frame.sandbox = 'allow-scripts'; fixture.append(frame);
+      const timer = setTimeout(() => finish(null, new Error(`Sem resultado: ${lesson.title}`)), 5000);
+      const preview = new F.preview.Preview(frame, () => {}, results => finish(results));
+      function finish(results, error) { clearTimeout(timer); preview.destroy(); frame.remove(); error ? reject(error) : resolve(results); }
+      preview.run(sourceCode, { allowScripts: lesson.moduleId === 'javascript', tests: descriptors });
+    });
+  }
+  test('Catálogo completo: 63 aulas, IDs únicos e sequência entre módulos', () => {
+    equal(F.lessons.length, 63); equal(F.cssLessons.length, 21); equal(F.javascriptLessons.length, 24);
+    equal(new Set(F.lessons.map(l => l.id)).size, 63);
+    F.lessons.forEach((l, i) => {
+      assert(l.available, l.title); assert(l.theory.length >= 6, l.title); equal(l.challenge.hints.length, 3);
+      equal(l.unlocks[0], F.lessons[i + 1]?.id);
+      equal(new Set(l.challenge.requirements.map(r => r.id)).size, l.challenge.requirements.length);
+    });
+  });
+  test('Todos os desbloqueios, linguagens e botões seguem o catálogo', () => {
+    const state = F.storage.defaults(); state.introDone = true;
+    F.lessons.forEach((l, i) => {
+      assert(F.progress.isUnlocked(state, l), l.title);
+      if (F.lessons[i + 1]) assert(!F.progress.isUnlocked(state, F.lessons[i + 1]));
+      equal(F.progress.languages(state, l).join(','), l.moduleId === 'html' ? 'html' : l.moduleId === 'css' ? 'html,css' : 'html,css,javascript');
+      const entry = F.progress.entry(state, l); entry.completed = true;
+      const host = document.createElement('div'); host.innerHTML = F.views.assessment({ status: 'complete', results: [], passed: 0, total: 0, percentage: 100 }, l, entry);
+      equal(host.querySelector('.congratulations a').getAttribute('href'), F.lessons[i + 1] ? `#/aula/${F.lessons[i + 1].id}` : '#/painel');
+      equal(host.textContent.includes('Ver minhas conquistas'), i === F.lessons.length - 1);
+    });
+  });
+  test('Progresso antigo com cinco aulas retoma na sexta, sem perder código', () => {
+    const old = F.storage.defaults(); old.introDone = true; old.currentLesson = 'html-lists';
+    F.htmlLessons.slice(0, 5).forEach(l => { const entry = F.progress.entry(old, l); entry.completed = true; entry.code = { ...l.challenge.solution }; });
+    const restored = F.storage.parse(JSON.stringify(old));
+    equal(F.progress.resume(restored).id, 'html-planned-1');
+    equal(restored.lessons['html-lists'].code.html, old.lessons['html-lists'].code.html);
+    assert(!F.progress.isUnlocked(restored, F.cssLessons[0]));
+  });
+  test('Media query exige a propriedade dentro da condição solicitada', () => {
+    const rule = { type: 'css-property', selector: '.lista', property: 'grid-template-columns', value: '1fr', media: 'max-width: 600px' };
+    equal(check(rule, { ...code(''), css: '.lista { grid-template-columns: 1fr; } @media (max-width: 600px) { p { color: red; } }' }).status, 'far');
+  });
+  for (const lesson of F.lessons) {
+    test(`Solução executável e desafio inicial incompleto: ${lesson.moduleId} / ${lesson.title}`, async () => {
+      const runtime = await runtimeFor(lesson, lesson.challenge.solution);
+      const assessment = F.evaluator.evaluate(lesson, lesson.challenge.solution, runtime);
+      equal(assessment.status, 'complete');
+      const initial = await runtimeFor(lesson, lesson.starterCode);
+      assert(F.evaluator.evaluate(lesson, lesson.starterCode, initial).status !== 'complete', `Código inicial já conclui ${lesson.title}`);
+      assert(F.evaluator.evaluate(lesson, code('')).status !== 'complete');
+    });
+  }
+  test('Console diferencia número e string', async () => {
+    const lesson = F.javascriptLessons[2], wrong = { ...lesson.challenge.solution, javascript: 'console.log("7"); console.log("7"); console.log(true);' };
+    assert(F.evaluator.evaluate(lesson, wrong, await runtimeFor(lesson, wrong)).status !== 'complete');
+  });
+  test('Contador fixo não substitui interação repetida', async () => {
+    const lesson = F.javascriptLessons[19], wrong = { ...lesson.challenge.solution, javascript: 'document.querySelector("#somar").addEventListener("click", () => { document.querySelector("#total").textContent = "1"; });' };
+    assert(F.evaluator.evaluate(lesson, wrong, await runtimeFor(lesson, wrong)).status !== 'complete');
+  });
+  test('Uma saída correta seguida de erro não conclui JavaScript', async () => {
+    const lesson = F.javascriptLessons[1], wrong = { ...lesson.challenge.solution, javascript: lesson.challenge.solution.javascript + '\nthrow new Error("falha");' };
+    assert(F.evaluator.evaluate(lesson, wrong, await runtimeFor(lesson, wrong)).status !== 'complete');
+  });
   let passed = 0;
   for (const { name, fn } of tests) {
     const item = document.createElement('li');

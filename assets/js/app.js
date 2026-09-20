@@ -38,7 +38,7 @@
       document.querySelector('#intro-back').onclick = () => { state.introStep = Math.max(0, state.introStep - 1); save(); render(); };
       document.querySelector('#intro-next').onclick = () => {
         F.progress.touch(state);
-        if (state.introStep === F.intro.length - 1) { state.introDone = true; save(); F.router.go(`/aula/${state.currentLesson}`); }
+        if (state.introStep === F.intro.length - 1) { state.introDone = true; save(); F.router.go(`/aula/${F.progress.resume(state).id}`); }
         else { state.introStep++; save(); render(); }
       };
     } else if (route.page === 'configuracoes') { main.innerHTML = F.views.settings(state); bindSettings(); }
@@ -73,7 +73,11 @@
     const effectiveCode = () => ({ html: entry.code.html, css: allowed.includes('css') ? entry.code.css : '', javascript: allowed.includes('javascript') ? entry.code.javascript : '' });
     const errors = document.querySelector('#preview-errors');
     const addError = text => { if (errors.children.length < 5) { const p = document.createElement('p'); p.textContent = text; errors.append(p); } };
-    const runner = new F.preview.Preview(document.querySelector('#preview-frame'), addError, results => { runtime = results; assess(false); });
+    const runner = new F.preview.Preview(document.querySelector('#preview-frame'), addError);
+    const testFrame = document.createElement('iframe');
+    testFrame.hidden = true; testFrame.setAttribute('sandbox', 'allow-scripts');
+    testFrame.title = 'Avaliação isolada do desafio'; document.body.append(testFrame);
+    const testRunner = new F.preview.Preview(testFrame, () => {}, results => { runtime = results; assess(false); });
     const neutral = F.evaluator.summarize(lesson.challenge.requirements.map(r => ({ ...r, state: 'pending' })), false);
     document.querySelector('#assessment').innerHTML = F.views.assessment(neutral, lesson, entry);
     function assess(count = true) {
@@ -90,13 +94,18 @@
     function run(evaluate = true) {
       clearTimeout(timer); dirty = false; errors.replaceChildren(); runtime = {};
       const code = effectiveCode(); F.evaluator.diagnostics(code.html).forEach(addError);
-      runner.run(code, { allowScripts: allowed.includes('javascript'), tests: lesson.challenge.requirements.filter(r => r.type === 'js-behavior') });
+      const allowScripts = allowed.includes('javascript');
+      runner.run(code, { allowScripts });
+      const tests = lesson.challenge.requirements.filter(r => ['js-behavior', 'css-computed'].includes(r.type));
+      if (tests.length) testRunner.run(code, { allowScripts, tests });
       if (evaluate) assess(); else save();
     }
     const editor = new F.Editor(document.querySelector('#editor'), entry.code, allowed, code => {
+      runtime = {}; testRunner.invalidate();
       entry.code = code; dirty = true; document.querySelector('#save-state').textContent = 'Salvando…'; clearTimeout(timer);
       timer = setTimeout(() => { F.progress.touch(state); if (state.preferences.autoRun) run(); else { dirty = false; assess(); } }, 400);
     }, () => run(), state.preferences.fontSize);
+    document.querySelector(`[data-language="${lesson.moduleId}"]`)?.click();
     flush = () => { if (dirty) { clearTimeout(timer); F.progress.touch(state); save(); dirty = false; } };
     document.querySelector('#run-code').onclick = () => run();
     document.querySelector('#refresh-preview').onclick = () => run();
@@ -122,14 +131,14 @@
     document.querySelector('#solution-button').onclick = () => {
       if (!confirm('Deseja ver a solução completa? Tente as dicas primeiro. A consulta será registrada e você poderá concluir a aula normalmente.')) return;
       entry.solutionViewed = true; save();
-      document.querySelector('#solution-area').innerHTML = `<h3>Uma solução possível</h3><pre><code>${F.escape(lesson.challenge.solution.html)}</code></pre><p>${F.escape(lesson.challenge.explanation)}</p><p class="small muted">Consulta registrada. Escreva sua versão no editor para praticar.</p>`;
+      document.querySelector('#solution-area').innerHTML = `<h3>Uma solução possível</h3>${Object.entries(lesson.challenge.solution).filter(([, value]) => value.trim()).map(([language, value]) => `<h4>${F.escape(language.toUpperCase())}</h4><pre><code>${F.escape(value)}</code></pre>`).join('')}<p>${F.escape(lesson.challenge.explanation)}</p><p class="small muted">Consulta registrada. Escreva sua versão no editor para praticar.</p>`;
       if (lastAssessment) document.querySelector('#assessment').innerHTML = F.views.assessment(lastAssessment, lesson, entry);
     };
-    document.querySelector('.example-frame').srcdoc = F.preview.documentSource({ html: lesson.example, css: '', javascript: '' }, 'example', { allowScripts: false });
+    document.querySelector('.example-frame').srcdoc = F.preview.documentSource(lesson.exampleCode || { html: lesson.example, css: '', javascript: '' }, 'example', { allowScripts: lesson.moduleId === 'javascript' });
     const removeResizers = bindResizers();
     const keyboardRun = event => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && event.target !== editor.input) { event.preventDefault(); run(); } };
     document.addEventListener('keydown', keyboardRun);
-    cleanup = () => { clearTimeout(timer); runner.destroy(); removeResizers(); document.removeEventListener('keydown', keyboardRun); };
+    cleanup = () => { clearTimeout(timer); runner.destroy(); testRunner.destroy(); testFrame.remove(); removeResizers(); document.removeEventListener('keydown', keyboardRun); };
     run(false);
     if (entry.attempts > 0) assess(false);
   }

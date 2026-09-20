@@ -6,10 +6,16 @@
       return state.lessons[lesson.id];
     },
     isUnlocked(state, lesson) {
-      if (!lesson.available) return false;
+      if (!lesson?.available) return false;
       const available = F.lessons.filter(l => l.available);
       const index = available.findIndex(l => l.id === lesson.id);
+      if (index < 0) return false;
       return available.slice(0, index).every(l => state.lessons[l.id]?.completed);
+    },
+    resume(state) {
+      const current = F.lessons.find(l => l.id === state.currentLesson);
+      if (current && !state.lessons[current.id]?.completed && this.isUnlocked(state, current)) return current;
+      return F.lessons.find(l => this.isUnlocked(state, l) && !state.lessons[l.id]?.completed) || current || F.lessons[0];
     },
     languages(state, lesson) {
       const allDone = module => F.lessons.filter(l => l.moduleId === module).every(l => l.available && state.lessons[l.id]?.completed);

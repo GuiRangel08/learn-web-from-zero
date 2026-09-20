@@ -90,13 +90,19 @@
     'css-selector': (r, c) => ({ pass: c.rules.some(rule => rule.selector.split(',').map(s => s.trim()).includes(r.selector)) }),
     'css-property': (r, c) => ({ pass: c.rules.some(rule => {
       if (!rule.selector.split(',').map(s => s.trim()).includes(r.selector)) return false;
+      if (r.media && !rule.media.includes(r.media)) return false;
       const value = rule.style.getPropertyValue(r.property).trim();
       if (r.approximate !== undefined) return Number.isFinite(parseFloat(value)) && Math.abs(parseFloat(value) - r.approximate) <= (r.tolerance || 0) && (!r.unit || value.endsWith(r.unit));
-      return r.value === undefined ? Boolean(value) : value.toLowerCase() === r.value.toLowerCase();
+      if (r.value === undefined) return Boolean(value);
+      const reference = c.doc.createElement('span');
+      reference.style.setProperty(r.property, r.value);
+      const expected = reference.style.getPropertyValue(r.property).trim();
+      return Boolean(expected) && value.toLowerCase() === expected.toLowerCase();
     }) }),
     'css-media': (r, c) => ({ pass: c.rules.some(rule => Boolean(rule.media) && (!r.includes || rule.media.includes(r.includes))) }),
     'js-source': (r, c) => ({ pass: new RegExp(r.pattern, r.flags || '').test(c.code.javascript) }),
-    'js-behavior': (r, c) => ({ pass: c.runtime?.[r.id] === true })
+    'js-behavior': (r, c) => ({ pass: c.runtime?.[r.id] === true }),
+    'css-computed': (r, c) => ({ pass: c.runtime?.[r.id] === true })
   };
   function summarize(results, evaluated = true) {
     const totalWeight = results.reduce((sum, r) => sum + (r.weight ?? 1), 0);

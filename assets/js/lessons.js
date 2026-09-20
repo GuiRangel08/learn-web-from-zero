@@ -5,15 +5,10 @@
     { id: 'css', title: 'Introdução ao CSS', label: 'Aparência', symbol: '{ }', description: 'Aprenda a escolher cores, espaços e layouts.' },
     { id: 'javascript', title: 'Introdução ao JavaScript', label: 'Interação', symbol: '( )', description: 'Faça suas páginas responderem às pessoas.' }
   ];
-  const planned = {
-    html: ['Texto simples e revisão de tags', 'Quebras de linha', 'Ênfase com <strong> e <em>', 'Atributos: revisão', 'Caminhos relativos: prática', '<div> e <span>', 'Elementos semânticos: <header>, <nav>, <main>, <section>, <article>, <aside> e <footer>', 'Tabelas', 'Formulários', 'Rótulos com <label>', 'Tipos de <input>', 'Acessibilidade básica', 'Projeto completo em HTML'],
-    css: ['Conectando style.css ao HTML', 'Seletores', 'Propriedades e valores', 'Cores', 'Background', 'Fontes', 'Tamanho do texto', 'Largura, altura e unidades', 'Bordas e border-radius', 'Margin', 'Padding', 'Box model', 'Classes', 'IDs', 'Display', 'Flexbox', 'Grid', 'Position', 'Pseudo-classes', 'Responsividade e media queries', 'Projeto completo com HTML e CSS'],
-    javascript: ['Conectando script.js: o que é JavaScript', 'console.log', 'Valores', 'Strings', 'Números', 'Booleanos', 'Variáveis', 'Operadores', 'Comparações', 'Condicionais', 'Funções', 'Arrays', 'Objetos', 'Repetições', 'O que é o DOM', 'querySelector', 'textContent', 'classList', 'addEventListener', 'Eventos de clique', 'Campos de formulário', 'Validação', 'Criação de elementos', 'Projeto completo com HTML, CSS e JavaScript']
-  };
-  F.lessons = [...F.htmlLessons];
-  for (const [moduleId, titles] of Object.entries(planned)) {
-    titles.forEach((title, index) => F.lessons.push({ id: `${moduleId}-planned-${index + 1}`, moduleId, title, order: index + (moduleId === 'html' ? 6 : 1), available: false }));
-  }
+  F.htmlLessons = [...F.htmlLessons, ...F.htmlMore];
+  F.lessons = [...F.htmlLessons, ...F.cssLessons, ...F.javascriptLessons];
+  // O catálogo ordenado é a única fonte da sequência, inclusive entre módulos.
+  F.lessons.forEach((lesson, index) => { lesson.unlocks = F.lessons[index + 1] ? [F.lessons[index + 1].id] : []; });
   F.intro = [
     ['O que é um site?', 'Um site é um conjunto de páginas que você pode visitar. Cada página combina conteúdo, como textos e imagens. Você vai criar uma pequena página, começando por uma única frase.'],
     ['O que é um navegador?', 'É o programa que abre páginas: Firefox, Chrome, Edge e Safari são exemplos. Ele lê o código de uma página e transforma as instruções em algo que você vê. Código é um texto com instruções.'],

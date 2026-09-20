@@ -62,6 +62,8 @@ class Browser:
             message = json.loads(self.receive(length))
             if message.get('method') == 'Runtime.exceptionThrown':
                 self.errors.append(message['params'])
+            if message.get('method') == 'Log.entryAdded' and message['params']['entry']['level'] == 'error':
+                self.errors.append(message['params']['entry']['text'])
             if message.get('id') == self.counter:
                 if 'error' in message:
                     raise RuntimeError(message['error'])
@@ -83,7 +85,8 @@ class Browser:
             if value:
                 return value
             time.sleep(.1)
-        raise RuntimeError(f'Tempo esgotado: {expression}\n{self.evaluate("location.href + document.documentElement.outerHTML")}\n{self.errors}')
+        details = self.evaluate('({url: location.href, assessment: document.querySelector("#assessment")?.textContent, errors: document.querySelector("#preview-errors")?.textContent})')
+        raise RuntimeError(f'Tempo esgotado: {expression}\n{details}\n{self.errors[-10:]}')
 
 
 def main():
@@ -107,10 +110,11 @@ def main():
             tabs = json.load(urllib.request.urlopen(f'http://127.0.0.1:{port}/json'))
             browser = Browser(next(tab for tab in tabs if tab['type'] == 'page')['webSocketDebuggerUrl'])
             browser.call('Runtime.enable')
+            browser.call('Log.enable')
             browser.call('Page.enable')
             for url in [root.as_uri() + '/testes.html', base + '/testes.html']:
                 browser.call('Page.navigate', {'url': url})
-                status = browser.wait('document.documentElement.dataset.tests')
+                status = browser.wait('document.documentElement.dataset.tests', seconds=90)
                 print(url, browser.evaluate('document.querySelector("#test-summary").textContent'))
                 if status != 'passed':
                     print(browser.evaluate('[...document.querySelectorAll("#test-results li")].filter(x=>x.textContent.startsWith("✕")).map(x=>x.textContent)'))
@@ -129,18 +133,33 @@ def main():
             assert browser.evaluate('document.querySelector(".requirements").textContent.includes("</p>")'), 'Falta orientação de fechamento'
             assert browser.evaluate('!JSON.parse(localStorage.getItem(FirstCode.storage.key)).lessons["html-text"].completed'), 'Parágrafo sem fechamento foi concluído'
             print('Regressão: parágrafo aberto não conclui a aula e recebe orientação com linha e fechamento.')
-            for index in range(5):
-                browser.evaluate(f'(() => {{ const input = document.querySelector("#code-input"); input.value = FirstCode.htmlLessons[{index}].challenge.solution.html; input.dispatchEvent(new Event("input")); }})()')
+            total = browser.evaluate('FirstCode.lessons.length')
+            for index in range(total):
+                browser.evaluate(f'''(() => {{
+                  const lesson = FirstCode.lessons[{index}];
+                  for (const [language, value] of Object.entries(lesson.challenge.solution)) {{
+                    const tab = document.querySelector('[data-language="' + language + '"]');
+                    if (!tab) continue;
+                    tab.click();
+                    const input = document.querySelector('#code-input');
+                    input.value = value; input.dispatchEvent(new Event('input'));
+                  }}
+                }})()''')
                 browser.wait('document.querySelector(".assessment-summary.complete")')
-                if index < 4:
+                if index < total - 1:
+                    assert browser.evaluate(f'document.querySelector(".congratulations a").getAttribute("href") === "#/aula/" + FirstCode.lessons[{index + 1}].id')
                     browser.evaluate('document.querySelector(".congratulations a").click()')
-                    browser.wait(f'document.querySelector(".lesson-heading h1")?.textContent === FirstCode.htmlLessons[{index + 1}].title')
+                    browser.wait(f'document.querySelector(".lesson-heading h1")?.textContent === FirstCode.lessons[{index + 1}].title')
+                if index in (4, 17, 38, total - 1):
+                    print(f'Progressão: {index + 1}/{total} aulas concluídas; navegação e transições de módulo OK.')
             count = browser.evaluate('Object.values(JSON.parse(localStorage.getItem(FirstCode.storage.key)).lessons).filter(x=>x.completed).length')
-            assert count == 5, count
+            assert count == total, count
+            assert browser.evaluate('document.querySelector(".congratulations a").getAttribute("href") === "#/painel"')
+            assert browser.evaluate('!document.querySelector("#preview-frame").srcdoc.includes("const tests =")'), 'Testes não devem alterar a prévia interativa'
             browser.call('Page.reload')
             browser.wait('document.querySelector(".assessment-summary.complete")')
             browser.evaluate('confirm = () => true; document.querySelector("#restore-code").click()')
-            assert browser.evaluate('document.querySelector("#code-input").value === FirstCode.htmlLessons[4].starterCode.html')
+            assert browser.evaluate('document.querySelector("#code-input").value === FirstCode.lessons.at(-1).starterCode.javascript')
             # Viewport pequeno: abas e documento sem rolagem horizontal.
             browser.call('Emulation.setDeviceMetricsOverride', {'width': 390, 'height': 844, 'deviceScaleFactor': 1, 'mobile': True})
             browser.evaluate('document.querySelector("#toggle-sidebar").click(); document.getElementById("mobile-tab-1").click()')
@@ -148,7 +167,7 @@ def main():
             assert browser.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'Overflow no celular'
             browser.evaluate('document.getElementById("mobile-tab-2").click()')
             assert browser.evaluate('getComputedStyle(document.querySelector("#lesson-panel-2")).display !== "none"')
-            print('Fluxo HTTP/ES Modules: introdução, 5 aulas, debounce, persistência, restauração e abas móveis OK.')
+            print(f'Fluxo HTTP/ES Modules: introdução, {total} aulas, persistência, restauração e abas móveis OK.')
             browser.call('Page.navigate', {'url': root.as_uri() + '/index.html'})
             browser.wait('document.querySelector(".hero")')
             print('Entrada file://: aplicação inicializada sem dependências.')

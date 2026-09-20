@@ -6,7 +6,7 @@
     { id: 'javascript', title: 'Introdução ao JavaScript', label: 'Interação', symbol: '( )', description: 'Faça suas páginas responderem às pessoas.' }
   ];
   const planned = {
-    html: ['Texto simples e revisão de tags', 'Quebras de linha', 'Ênfase com strong e em', 'Atributos: revisão', 'Caminhos relativos: prática', 'div e span', 'Elementos semânticos: header, nav, main, section, article, aside e footer', 'Tabelas', 'Formulários', 'Labels', 'Tipos de input', 'Acessibilidade básica', 'Projeto completo em HTML'],
+    html: ['Texto simples e revisão de tags', 'Quebras de linha', 'Ênfase com <strong> e <em>', 'Atributos: revisão', 'Caminhos relativos: prática', '<div> e <span>', 'Elementos semânticos: <header>, <nav>, <main>, <section>, <article>, <aside> e <footer>', 'Tabelas', 'Formulários', 'Rótulos com <label>', 'Tipos de <input>', 'Acessibilidade básica', 'Projeto completo em HTML'],
     css: ['Conectando style.css ao HTML', 'Seletores', 'Propriedades e valores', 'Cores', 'Background', 'Fontes', 'Tamanho do texto', 'Largura, altura e unidades', 'Bordas e border-radius', 'Margin', 'Padding', 'Box model', 'Classes', 'IDs', 'Display', 'Flexbox', 'Grid', 'Position', 'Pseudo-classes', 'Responsividade e media queries', 'Projeto completo com HTML e CSS'],
     javascript: ['Conectando script.js: o que é JavaScript', 'console.log', 'Valores', 'Strings', 'Números', 'Booleanos', 'Variáveis', 'Operadores', 'Comparações', 'Condicionais', 'Funções', 'Arrays', 'Objetos', 'Repetições', 'O que é o DOM', 'querySelector', 'textContent', 'classList', 'addEventListener', 'Eventos de clique', 'Campos de formulário', 'Validação', 'Criação de elementos', 'Projeto completo com HTML, CSS e JavaScript']
   };
@@ -26,6 +26,6 @@
     ['Atualize a página', 'Volte ao navegador e use o botão de atualizar, normalmente uma seta circular. Ele lê o arquivo novamente. Na plataforma, o painel Resultado atualiza sozinho depois de uma pequena pausa na digitação.'],
     ['Entenda uma mensagem de erro', 'Se o resultado não for o esperado, leia a mensagem e confira uma coisa por vez. O navegador tenta corrigir HTML incompleto e pode não mostrar um erro. Nosso painel de avaliação aponta o próximo passo sem apagar o seu trabalho.'],
     ['Três responsabilidades', 'HTML organiza o conteúdo. CSS cuida da aparência, como cores e espaços. JavaScript descreve ações e respostas. Você aprenderá nessa ordem, sem bibliotecas. O curso segue as regras atuais dessas três linguagens e prioriza recursos que funcionam nos navegadores modernos. Primeiro, vamos usar só HTML.'],
-    ['Sua primeira tag', 'Uma tag é uma marca que informa o papel de um texto. Em <h1>Olá, mundo!</h1>, <h1> inicia o título e </h1> termina. Os sinais < e > delimitam as marcas; / indica o fechamento. O navegador mostra Olá, mundo! como título. Vamos experimentar?']
+    ['Sua primeira tag', 'Observe <h1>Olá, mundo!</h1>. A tag <h1> marca o início do título; Olá, mundo! é o texto; a tag </h1> marca o fim. Os sinais < e > delimitam cada tag; / indica o fechamento. O conjunto inteiro é um elemento HTML. O navegador mostra apenas o texto como título. Na primeira aula, vamos praticar cada uma dessas partes.']
   ];
 })();
